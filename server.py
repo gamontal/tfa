@@ -18,14 +18,14 @@ def static_proxy(path):
 def get_results():
 
     inputfile = request.files['inputfile']
-    content = inputfile.stream.read().decode('utf-8')
+    fileContent = inputfile.stream.read().decode('utf-8')
 
     options = {
-        'allow_digits': False,
-        'ignore_list': [],
-        'content': content,
-        'max_n_word': 3,
-        'top_n': 20
+        'allow_digits': request.form['allow_digits'],
+        'ignore_list': request.form['ignore_list'],
+        'content': fileContent,
+        'max_n_word': int(request.form['max_n_word']),
+        'top_n': int(request.form['top_n_grams'])
     }
 
     results = wfa(options).calc();

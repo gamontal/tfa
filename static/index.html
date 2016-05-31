@@ -22,6 +22,10 @@
              color: #212121;
          }
 
+         #d-prompt {
+             color: #212121;
+         }
+
         </style>
     </head>
     <body class="white-text" style="background-color: #272B30">
@@ -36,7 +40,7 @@
                         <input type="file" accept="text/plain" name="inputfile" id="inputfile" />
                     </div>
                     <div class="file-path-wrapper">
-                        <input class="file-path validate" type="text" placeholder="Upload .txt file" style="font-size: 22px; width: 100%;" readonly>
+                        <input id="filename" class="file-path validate" type="text" placeholder="Upload .txt file" style="font-size: 22px; width: 100%;" readonly>
                     </div>
                 </div>
 
@@ -55,7 +59,7 @@
                 <div class="options">
                     <h5>Top n-grams item count</h5>
                     <p class="range-field">
-                        <input type="range" id="top_n_grams" min="1" max="7" />
+                        <input type="range" id="top_n_grams" min="1" max="40" />
                     </p>
                 </div>
 
@@ -63,12 +67,23 @@
                 <div class="options">
                     <h5>Top n-grams word count per item</h5>
                     <p class="range-field">
-                        <input type="range" id="max_n_word" min="5" max="40" />
+                        <input type="range" id="max_n_word" min="1" max="7" />
                     </p>
                 </div>
 
                 <!-- CALCULATE -->
-                <button id="tfa-btn" class="waves-effect waves-light btn tooltipped right" data-position="left" data-delay="50" data-tooltip="Calculate and download the results in JSON format"><i class="material-icons right">file_download</i><b>calculate and download</b></button>
+                <button id="tfa-btn" data-target="d-prompt" class="waves-effect waves-light btn modal-trigger tooltipped right" style="margin-top: 30px;" data-position="left" data-delay="50" data-tooltip="Calculate and download the results in JSON format"><i class="material-icons right">file_download</i><b>calculate and download results</b></button>
+
+                <!-- DOWNLOAD PROMPT -->
+                <div id="d-prompt" class="modal">
+                    <div class="modal-content">
+                        <h4></h4>
+                        <div style="margin-top: 40px; margin-bottom: 40px;" class="progress">
+                            <div class="indeterminate" style="width: 70%"></div>
+                        </div>
+                    </div>
+                </div>
+
             </form>
         </div>
 
@@ -80,7 +95,17 @@
         <script>
 
          $(document).ready(function () {
+
+             $('#inputfile').blur(function () {
+                 if(!$(this).val()) {
+                     alert('test');
+                 }
+             });
+
              $('#tfa-btn').click(function () {
+
+                 $('.modal-content h4').html('Analysing ' + $('#filename').val() + ' ...');
+                 $('#d-prompt').openModal();
 
                  var allowDigits = false;
 
@@ -97,7 +122,11 @@
                  var max_n_word = $('#max_n_word').val();
 
                  var fd = new FormData();
-                 fd.append( 'inputfile', $( '#inputfile' )[0].files[0] );
+                 fd.append('inputfile', $('#inputfile')[0].files[0] );
+                 fd.append('allow_digits', allowDigits);
+                 fd.append('ignore_list', ignoreList);
+                 fd.append('top_n_grams', top_n_grams);
+                 fd.append('max_n_word',  max_n_word);
 
                  $.ajax({
                      url: '/tfa',
@@ -106,13 +135,31 @@
                      contentType: false,
                      type: 'POST',
                      success: function(data){
-                         console.log(data);
+                         $('#d-prompt').closeModal();
+
+                         download($('#filename').val().split('.')[0] + '-stats.json', JSON.stringify(data, 2, 2));
                      }
                  });
-
              });
          });
 
+         function download (filename, text) {
+             var element = document.createElement('a');
+             element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+             element.setAttribute('download', filename);
+
+             element.style.display = 'none';
+             document.body.appendChild(element);
+
+             element.click();
+
+             document.body.removeChild(element);
+         }
+
+        </script>
+
+        <script>
+         $('.modal-trigger').leanModal({ dismissible: false });
         </script>
     </body>
 </html>
