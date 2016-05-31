@@ -1,7 +1,7 @@
 #!flask/bin/python
 
 from flask import Flask, jsonify, make_response, request, redirect, url_for, send_from_directory
-from wfa import *
+from tfa import *
 
 server = Flask(__name__)
 
