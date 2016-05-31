@@ -18,7 +18,7 @@ def static_proxy(path):
 def get_results():
 
     inputfile = request.files['inputfile']
-    content = inputfile.stream.read().decode("utf-8")
+    content = inputfile.stream.read().decode('utf-8')
 
     options = {
         'allow_digits': False,
