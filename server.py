@@ -43,4 +43,4 @@ def bad_request(error):
     return make_response(jsonify({ 'error': 'Bad Request'}), 400)
 
 if __name__ == '__main__':
-    server.run(debug=True)
+    server.run(host='0.0.0.0', port=8080) # start flask server on port 8080
