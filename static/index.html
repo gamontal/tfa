@@ -72,7 +72,7 @@
                 </div>
 
                 <!-- CALCULATE -->
-                <button id="tfa-btn" data-target="d-prompt" class="waves-effect waves-light tooltipped right btn modal-trigger" style="margin-top: 30px;" data-position="left" data-delay="50" data-tooltip="Calculate and download the results in JSON format"><i class="material-icons right">file_download</i><b>calculate and download results</b></button>
+                <button id="tfa-btn" data-target="d-prompt" class="waves-effect waves-light tooltipped right submit btn" style="margin-top: 30px;" data-position="left" data-delay="50" data-tooltip="Calculate and download the results in JSON format"><i class="material-icons right">file_download</i><b>calculate and download results</b></button>
 
                 <!-- DOWNLOAD PROMPT -->
                 <div id="d-prompt" class="modal">
@@ -95,12 +95,22 @@
         <script>
 
          $(document).ready(function () {
-             $('.modal-trigger').leanModal({ dismissible: false });
+             $('#tfa-btn').removeClass("waves-effect waves-light submit").addClass('disabled');
+
+             $('.file-path').change(function() {
+                 if ($('#inputfile').val()) {
+                     $('#tfa-btn').addClass("waves-effect waves-light submit").removeClass('disabled');
+                 } else {
+                     $('#tfa-btn').removeClass("waves-effect waves-light submit").addClass('disabled');
+                 }
+             });
 
              $('#tfa-btn').click(function () {
-
                  $('.modal-content h4').html('Analysing ' + $('#filename').val() + ' ...');
-                 $('#d-prompt').openModal();
+
+                 if (!$(this).hasClass('disabled')) {
+                     $('#d-prompt').openModal({ dismissible: false });
+                 }
 
                  var allowDigits = false;
 
