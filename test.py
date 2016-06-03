@@ -1,5 +1,5 @@
 import os
-from tfa_nltk import *
+from tfa_nltk import analyzer
 
 options = {
     'allow_digits': False,
@@ -9,5 +9,5 @@ options = {
     'top_n': 4
 }
 
-results = tfa(options).calc_results()
+results = analyzer(options)
 print(results)

@@ -1,9 +1,9 @@
-#!flask/bin/python
+#!flask/bin/python3
 
 import os
 
 from flask import Flask, jsonify, make_response, request, redirect, url_for, send_from_directory
-from tfa import *
+from tfa_nltk import analyzer
 
 app = Flask(__name__)
 
@@ -30,9 +30,7 @@ def get_results():
         'top_n': int(request.form['top_n_grams'])
     }
 
-    results = wfa(options).calc();
-
-    return jsonify(results), 200
+    return jsonify(analyzer(options)), 200
 
 @app.errorhandler(404)
 def not_found(error):

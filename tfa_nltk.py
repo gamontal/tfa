@@ -5,9 +5,11 @@ import re
 import collections
 import nltk
 
-import json
-
 nltk.data.path.append('./nltk_data')
+
+class Namespace:
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
 
 previous_word = ''
 previous_pair = ''
@@ -49,76 +51,28 @@ def get_n_word_frequencies(n_word_counter, top_n, data, tag=None):
     if total_entries > 0:
         m = n_word_counter.most_common(min(unique_entries, top_n))
         n = len(m[0][0].split(' '))
-        
+
         tmp = {}
-        
+
         for i in range(0, min(unique_entries, top_n)):
             n_word = m[i][0]
             count = m[i][1]
             perc = 100.0 * (count / float(total_entries))
 
             tmp[str(i + 1)] = n_word + ' (' + str(count).split('.')[0] + ' = ' + str(perc)[:5] + '%' + ')'
-            
+
             if tag == None:
                 data['commonest_' + str(n) + '_words'] = tmp
             else:
                 data['commonest_' + tag.lower().replace (' ', '_')] = tmp
 
-def calc_results(word_stats):
-
-    data = {
-        'longest_word': str(word_stats['longest_word']) + ' (' + str(word_stats['max_length']) + ')',
-        'shortest_word': str(word_stats['shortest_word']) + ' (' + str(word_stats['min_length']) + ')',
-        'mean_word_length_per_char': word_stats['mean_length'],
-        'total_words_parsed': int(str(word_stats['total_words']).split('.')[0]),
-        'total_chars_parsed': word_stats['total_chars'],
-        'ari_score': float(str(word_stats['ARI_score'])[:5])
-    }
-
-    for i in range(args.max_n_word):
-        get_n_word_frequencies(counters[i], args.top_n, data)
-
-    get_n_word_frequencies(personal_pronoun_counter, args.top_n, data, tag="Personal Pronouns")
-    get_n_word_frequencies(noun_counter, args.top_n, data, tag="Nouns")
-    get_n_word_frequencies(adjective_counter, args.top_n, data, tag="Adjectives")
-    get_n_word_frequencies(adverb_counter, args.top_n, data, tag="Adverbs")
-    get_n_word_frequencies(verb_counter, args.top_n, data, tag="Verbs")
-
-    total_dev = 0.0
-    freq_chars = {}
-
-    for char in sorted(iter(word_stats['char_percentages'])):
-        perc = word_stats['char_percentages'][char]
-
-        # Percentage deviation from random distribution of characters.
-        dev = 100.0 * (abs((100.0 / 26.0) - perc) / (100.0 / 26.0))
-        total_dev += dev
-
-        freq_chars[char] = str(perc)[:4] + '% (' + str(dev)[:4] + '% deviation from random)'
-
-    data['frequency_analysis'] = freq_chars
-    data['total_deviation'] = float(str(total_dev).split('.')[0])
-
-    average_dev = total_dev / 26.0
-
-    data['average_deviation'] =  float(str(average_dev)[:4])
-    data['lexical_density'] = float(str(word_stats['lexical_density'])[:5])
-
-    print(json.dumps(data, sort_keys=True, indent=4, separators=(',', ': ')))
-
-if __name__ == '__main__':
-    import argparse
-
-    parser = argparse.ArgumentParser(description='Perform letter, word and n-tuple frequency analysis on text files.')
-    parser.add_argument('--filename', '-f', dest='inputfile', required=True, help='Text file to parse.')
-    parser.add_argument('--ntuple', '-n', dest='max_n_word', required=False, default=4, type=int, help='The maximum length n-tuple of words. Default is 4.')
-    parser.add_argument('--top', '-t', dest='top_n', required=False, default=20, type=int, help='List the top t most frequent n-words. Default is 20.')
-    parser.add_argument('--allow-digits', '-d', dest='allowdigits', default=False, required=False, help='Allow digits to be parsed (true/false). Default is false.')
-    parser.add_argument('--ignore', '-i', dest='ignore_list', required=False, help='Comma-delimted list of things to ignore')
- 
-    args = parser.parse_args()
-
-    ignore_list = str(args.ignore_list).split(",")
+def analyzer(options):
+    args = Namespace(
+        allow_digits = options['allow_digits'],
+        ignore_list = options['ignore_list'],
+        content = options['content'],
+        max_n_word = options['max_n_word'],
+        top_n = options['top_n'])
 
     # Dynamically allocated n-word counters
     max_n_word = args.max_n_word
@@ -129,21 +83,14 @@ if __name__ == '__main__':
     # Word length counter
     word_length_counter = collections.Counter()
 
-    # Read in all of the words in a file
-    print ("[+] Reading text from '" + args.inputfile + "'...")
-    text = open(args.inputfile).read().lower()
-
     # Use nltk to classify/tag each word/token.
-    print ("[+] Tokenizing text...")
-    text = open(args.inputfile).read().lower()
+    text = args.content.lower()
     tokenizer = nltk.tokenize.RegexpTokenizer(r'\w+|[^\w\s]+')
     tokens = tokenizer.tokenize(text)
 
-    print ("[+] Tagging tokens...")
     tagger = nltk.UnigramTagger(nltk.corpus.brown.tagged_sents())
     tagged_tokens = tagger.tag(tokens)
 
-    print ("[+] Tallying tags...")
     personal_pronoun_counter = collections.Counter()
     adjective_counter = collections.Counter()
     adverb_counter = collections.Counter()
@@ -171,20 +118,18 @@ if __name__ == '__main__':
             verb_counter[token[0]] += 1
 
     # Shall we include digits?
-    if args.allowdigits:
+    if args.allow_digits:
         words = re.findall(r"['\-\w]+", text)
     else:
         words = re.findall(r"['\-A-Za-z]+", text)
 
-    print ("[+] Counting sentences...")
     word_stats['total_sentences'] = len(nltk.sent_tokenize(text))
 
-    print ("[+] Performing frequency analysis of n-words...")
     for word in words:
-    
-        if word in ignore_list:
+
+        if word in args.ignore_list:
             continue
-        
+
         word = word.strip(r"&^%$#@!")
 
         # Allow hyphenated words, but not hyphens as words on their own.
@@ -247,4 +192,42 @@ if __name__ == '__main__':
     ALW = word_stats['total_chars'] / float(total_words)
     word_stats['ARI_score'] = (0.5 * ASL) + (4.71 * ALW) - 21.43
 
-    calc_results(word_stats)
+    data = {
+        'longest_word': str(word_stats['longest_word']) + ' (' + str(word_stats['max_length']) + ')',
+        'shortest_word': str(word_stats['shortest_word']) + ' (' + str(word_stats['min_length']) + ')',
+        'mean_word_length_per_char': word_stats['mean_length'],
+        'total_words_parsed': int(str(word_stats['total_words']).split('.')[0]),
+        'total_chars_parsed': word_stats['total_chars'],
+        'ari_score': float(str(word_stats['ARI_score'])[:5])
+    }
+
+    for i in range(args.max_n_word):
+        get_n_word_frequencies(counters[i], args.top_n, data)
+
+    get_n_word_frequencies(personal_pronoun_counter, args.top_n, data, tag="Personal Pronouns")
+    get_n_word_frequencies(noun_counter, args.top_n, data, tag="Nouns")
+    get_n_word_frequencies(adjective_counter, args.top_n, data, tag="Adjectives")
+    get_n_word_frequencies(adverb_counter, args.top_n, data, tag="Adverbs")
+    get_n_word_frequencies(verb_counter, args.top_n, data, tag="Verbs")
+
+    total_dev = 0.0
+    freq_chars = {}
+
+    for char in sorted(iter(word_stats['char_percentages'])):
+        perc = word_stats['char_percentages'][char]
+
+        # Percentage deviation from random distribution of characters.
+        dev = 100.0 * (abs((100.0 / 26.0) - perc) / (100.0 / 26.0))
+        total_dev += dev
+
+        freq_chars[char] = str(perc)[:4] + '% (' + str(dev)[:4] + '% deviation from random)'
+
+    data['frequency_analysis'] = freq_chars
+    data['total_deviation'] = float(str(total_dev).split('.')[0])
+
+    average_dev = total_dev / 26.0
+
+    data['average_deviation'] =  float(str(average_dev)[:4])
+    data['lexical_density'] = float(str(word_stats['lexical_density'])[:5])
+
+    return data
